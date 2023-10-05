@@ -1,22 +1,20 @@
-#This is an example webapp.io configuration for Docker!
 FROM vm/ubuntu:18.04
 
-# To note: Layerfiles create entire VMs, *not* containers!
-
-# install the latest version of Docker, as in the official Docker installation tutorial.
+# install docker-ce (from tutorial for ubuntu)
 RUN apt-get update && \
-    apt-get install ca-certificates curl gnupg lsb-release && \
-    sudo mkdir -p /etc/apt/keyrings && \
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg && \
-    echo \
-    "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" |\
-      sudo tee /etc/apt/sources.list.d/docker.list > /dev/null && \
+    apt-get install apt-transport-https ca-certificates curl software-properties-common && \
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add - && \
+    add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable" && \
     apt-get update && \
-    apt-get install docker-ce docker-ce-cli containerd.io
+    apt install docker-ce
 
-# copy files from the repository into this staging server
-COPY . .
+# install docker compose
+RUN curl -L "https://github.com/docker/compose/releases/download/1.27.4/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose && \
+    chmod +x /usr/local/bin/docker-compose
 
-RUN docker build -t image .
-RUN docker run -d -p 80:80 image
-EXPOSE WEBSITE http://localhost:80
+# copy the root (i.e., repository root) to /root in the runner
+COPY / /root
+
+RUN REPEATABLE docker-compose up -d --build --force-recreate --remove-orphans && sleep 6
+
+EXPOSE WEBSITE localhost:8000
